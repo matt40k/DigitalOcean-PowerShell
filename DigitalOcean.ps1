@@ -68,6 +68,12 @@ $putty_download_site = "http://the.earth.li/~sgtatham/putty/latest/x86"
 ######                                                            #####
 #######################################################################
 
+if ($api_key -eq $null)
+{
+  Write-Host "ERROR: No API key set in api.txt file!" -foregroundcolor red
+  break
+}
+
 $header = @{"Authorization"="Bearer " + $api_key;"Content-Type"="application/json"}
 
 
@@ -285,7 +291,7 @@ Function RunPutty ($build_script)
 # Creates a new droplet [entire process]
 Function CreateNewDroplet
 {
-Write-Host ""
+Clear-Host
 Write-Host "Create new droplet"
 Write-Host "=================="
 Write-Host ""
@@ -526,4 +532,9 @@ If ($droplets.Count -gt 0)
       ConnectToDroplet
     }
   }
+}
+else
+{
+  # No droplets created, let's create one!
+  CreateNewDroplet
 }
