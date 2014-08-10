@@ -5,8 +5,8 @@
 # https://developers.digitalocean.com/
 #
 # Author: Matt Smith (matt@matt40k.uk)
-# Date: 07/2015
-# Version 0.a
+# Date: 10/08/2015
+# Version 0.b
 # License: GPL v2
 #
 
@@ -41,9 +41,9 @@ $api_key = ReadAPIKey
 
 #  Default settings for your new droplets
 $defaultregion = "lon1"
-$defaultsize = "512mb"
-$defaultimage = "ubuntu-14-04-x64"
-$defaultbackups = "false"
+$defaultsize = "1gb"
+$defaultimage = "ubuntu-14-04-x32"
+$defaultbackups = "true"
 $defaultipv6 = "true"
 $defaultprivate_networking = "false"
 
@@ -95,21 +95,21 @@ Function ListAllDomains
 Function ListAllRegions
 {
   $r = Invoke-WebRequest -Uri $url/regions -Method GET -Headers $header
-  return $r.Content
+  return $r.Content | ConvertFrom-Json
 }
 
 # Lists all the OS images avalible
 Function ListAllImages
 {
   $r = Invoke-WebRequest -Uri $url/images -Method GET -Headers $header
-  return $r.Content
+  return $r.Content | ConvertFrom-Json
 }
 
 # Lists all the server sizes (512mb \ 1gb \ 2gb etc)
 Function ListAllSizes
 {
   $r = Invoke-WebRequest -Uri $url/sizes -Method GET -Headers $header
-  return $r.Content
+  return $r.Content | ConvertFrom-Json
 }
 
 # Creates a new domain in DNS on your DigitalOcean account
@@ -308,24 +308,165 @@ If ($domains.name -contains $newdomain)
   break
 }
 
-#
-# TODO
-# Added menu select for changing Images, Regions and Sizes from default
-#
-
 $newdomainbody = @{name=$newdomain;ip_address=$tempip} | ConvertTo-Json
 $createddomain = CreateDomain -content $newdomainbody
 
 ##
 # Create droplet
 
-# If empty set to default
-$newregion = $defaultregion
-$newsize = $defaultsize
-$newimage = $defaultimage
-$newbackups = $defaultbackups
-$newipv6 = $defaultipv6
-$newprivate_networking = $defaultprivate_networking
+##
+#  Images
+Clear-Host
+$images = ListAllImages
+$imageCnt = $images.images.Count
+$imageUpTo = 1
+$publicImages =  @()
+
+[int]$xMenuChoiceA = 0
+while ( $xMenuChoiceA -lt 1 -or $xMenuChoiceA -gt $imageCnt ){
+
+foreach ($image in $images.images)
+{
+  if ($image.public -eq 'true')
+  {
+    if ($defaultimage -eq $image.name)
+    {
+      Write-Host '  '$imageUpTo'. ' $image.name ' (default)'
+    }
+    else
+    {
+      Write-Host '  '$imageUpTo'. ' $image.name
+    }
+    $publicImages = $publicImages + $image.name
+    $imageUpTo = $imageUpTo + 1
+  }
+}
+[Int]$xMenuChoiceA = read-host "Select a image for your new droplet" }
+$newimage = $publicImages[$xMenuChoiceA -1]
+
+
+##
+#  Regions
+Clear-Host
+$regions = ListAllRegions
+$regionCnt = $regions.regions.Count
+$regionUpTo = 1
+
+[int]$xMenuChoiceA = 0
+while ( $xMenuChoiceA -lt 1 -or $xMenuChoiceA -gt $regionCnt ){
+
+foreach ($region in $regions.regions)
+{
+  if ($defaultregion -eq $region.name)
+  {
+    Write-Host '  '$regionUpTo'. ' $region.name ' (default)'
+  }
+  else
+  {
+    Write-Host '  '$regionUpTo'. ' $region.name
+  }
+  $regionUpTo = $regionUpTo + 1
+}
+[Int]$xMenuChoiceA = read-host "Select a region\data centre for your new droplet" }
+$newregion = $regions.regions[$xMenuChoiceA -1].slug
+
+
+##
+#  Sizes
+Clear-Host
+$sizes = ListAllSizes
+$sizesCnt = $sizes.sizes.Count
+$sizesUpTo = 1
+[int]$xMenuChoiceA = 0
+while ( $xMenuChoiceA -lt 1 -or $xMenuChoiceA -gt $sizesCnt ){
+
+foreach ($size in $sizes.sizes)
+{
+  if ($defaultsize -eq $size.slug)
+  {
+    Write-Host '  '$sizesUpTo'. ' $size.slug ' (default)'
+  }
+  else
+  {
+    Write-Host '  '$sizesUpTo'. ' $size.slug
+  }
+  $sizesUpTo = $sizesUpTo + 1
+}
+[Int]$xMenuChoiceA = read-host "Select a size for your new droplet" }
+$newsize = $sizes.sizes[$xMenuChoiceA -1].slug
+
+##
+#  Backups
+Clear-Host
+[int]$xMenuChoiceA = 0
+while ( $xMenuChoiceA -lt 1 -or $xMenuChoiceA -gt 2 )
+{
+  if ($defaultbackups -eq 'true')
+  {
+    Write-Host '  1. Enable Backups (Default)'
+    Write-Host '  2. Disable Backups'
+  }
+  else
+  {
+    Write-Host '  1. Enable Backups'
+    Write-Host '  2. Disable Backups (Default)'
+  }  
+  [Int]$xMenuChoiceA = read-host "Enable backups?"
+}
+Switch( $xMenuChoiceA )
+{
+  1 { $newbackups = 'true' }
+  2 { $newbackups = 'false' }
+}
+
+##
+#  IPv6
+Clear-Host
+[int]$xMenuChoiceA = 0
+while ( $xMenuChoiceA -lt 1 -or $xMenuChoiceA -gt 2 )
+{
+  if ($defaultipv6 -eq 'true')
+  {
+    Write-Host '  1. Enable IPv6 (default)'
+    Write-Host '  2. Disable IPv6'
+  }
+  else
+  {
+    Write-Host '  1. Enable IPv6'
+    Write-Host '  2. Disable IPv6 (default)'
+  }
+  [Int]$xMenuChoiceA = read-host "Enable IPv6?"
+}
+Switch( $xMenuChoiceA )
+{
+  1 { $newipv6 = 'true' }
+  2 { $newipv6 = 'false' }
+}
+
+
+##
+#  Private networking
+Clear-Host
+[int]$xMenuChoiceA = 0
+while ( $xMenuChoiceA -lt 1 -or $xMenuChoiceA -gt 2 )
+{
+  if ($defaultprivate_networking -eq 'true')
+  {
+    Write-Host '  1. Enable Private Networking (default)'
+    Write-Host '  2. Disable Private Networking'
+  }
+  else
+  {
+    Write-Host '  1. Enable Private Networking'
+    Write-Host '  2. Disable Private Networking (default)'
+  }
+  [Int]$xMenuChoiceA = read-host "Enable Private Networking?"
+}
+Switch( $xMenuChoiceA )
+{
+  1 { $newprivate_networking = 'true' }
+  2 { $newprivate_networking = 'false' }
+}
 
 ##
 #  And actually create it
@@ -341,6 +482,7 @@ Write-Host ""
 Write-Host "  droplet - id: " $id
 Write-Host "  please wait while the droplet is build..."
 Start-Sleep -s 30
+Write-Host "`r"
 Write-Host ""
 
 # Get the IP address for the newly created droplet
@@ -349,13 +491,13 @@ $ip = GetIPAddress($id)
 # Get IPv4 address
 foreach ($ipv4 in $ip.droplet.networks.v4)
 {
-  Write-Host " IPv4 address: " $ipv4.ip_address
+  Write-Host "  IPv4 address: " $ipv4.ip_address
 }
 
 # Get IPv6 address
 foreach ($ipv6 in $ip.droplet.networks.v6)
 {
-  Write-Host " IPv6 address: " $ipv6.ip_address
+  Write-Host "  IPv6 address: " $ipv6.ip_address
 }
 
 $records = ListAllRecords
@@ -476,23 +618,6 @@ Write-Host ""
 Write-Host "Account status"
 Write-Host "=============="
 Write-Host ""
-
-
-##
-#  Images
-$images = ListAllImages
-#Write-Host $images
-
-##
-#  Regions
-$regions = ListAllRegions
-#Write-Host $regions
-
-##
-#  Sizes
-$sizes = ListAllSizes
-#Write-Host $sizes
-
 
 ##
 #  Droplets
