@@ -1,14 +1,5 @@
-﻿# 
-# DigitalOcean API v2 - PowerShell
-# ================================
-# Uses version 2 of the DigitalOcean RESTful Web API
+﻿# Uses version 2 of the DigitalOcean RESTful Web API
 # https://developers.digitalocean.com/
-#
-# Author: Matt Smith (matt@matt40k.uk)
-# Date: 10/08/2015
-# Version 0.b
-# License: GPL v2
-#
 
 # On Error - Stop
 $ErrorActionPreference = "Stop"
