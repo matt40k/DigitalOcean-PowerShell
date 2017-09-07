@@ -512,30 +512,9 @@ $newipv6record = @{name="@";data=$ipv6.ip_address;type="AAAA"} | ConvertTo-Json
 CreateRecord -data $newipv6record
 
 ##
-# Create default aliases (www, blog, secure)
+# Create default aliases (www)
 $address = $newdomain + "."
 CreateCNameRecord -cname "www" -address $address
-CreateCNameRecord -cname "blog" -address $address
-CreateCNameRecord -cname "secure" -address $address
-
-
-####
-#  
-# Config mail settings
-#
-###
-
-###############################################
-# Rackspace Mail
-###############################################
-# Create MX records
-CreateMXRecord -address "mx1.emailsrvr.com." -priority 10
-CreateMXRecord -address "mx2.emailsrvr.com." -priority 20
-# Create SPF TXT record
-CreateSPFRecord -spf "v=spf1 include:emailsrvr.com ~all"
-# Create CNAME record
-CreateCNameRecord -cname "mail" -address "apps.rackspace.com."
-
 
 ####
 #
